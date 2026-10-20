@@ -1,0 +1,651 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Roleta da Liz</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&family=Nunito:wght@500;700;800&family=Caveat:wght@600&display=swap">
+<style>
+  /* Layout: uma única tela centralizada — título manuscrito, roleta grande, corações de chances e um cartão de prêmio que sobe por cima. Visual único (rosa claro), escolhido de propósito. */
+  :root {
+    --bg: #fde8ee;
+    --bg-dot: #f8cfdb;
+    --ink: #5a2238;
+    --ink-soft: #9a5a72;
+    --cherry: #e0456f;
+    --cherry-deep: #b82f57;
+    --cream: #fffaf6;
+    --gold: #f4b860;
+    --display: "Sniglet", "Nunito", system-ui, sans-serif;
+    --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --hand: "Caveat", "Segoe Script", cursive;
+    color-scheme: light;
+  }
+  html, body { min-height: 100%; }
+  body {
+    background:
+      radial-gradient(var(--bg-dot) 1.6px, transparent 1.8px) 0 0 / 26px 26px,
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 40px;
+    overflow-x: hidden;
+  }
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    text-align: center;
+  }
+  .eyebrow {
+    font-family: var(--hand);
+    font-size: 1.6rem;
+    color: var(--cherry);
+    margin: 0;
+    transform: rotate(-3deg);
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 9vw, 3.6rem);
+    line-height: 1;
+    margin: -6px 0 0;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  h1 span { color: var(--cherry); }
+  .lead {
+    margin: 0;
+    max-width: 38ch;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  /* Roleta */
+  .wheel-wrap {
+    position: relative;
+    width: min(440px, 100%);
+    aspect-ratio: 1;
+    max-width: 100%;
+    margin-top: 10px;
+  }
+  .wheel-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: var(--cherry);
+    box-shadow: 0 14px 0 var(--cherry-deep), 0 24px 40px rgba(184, 47, 87, .25);
+  }
+  .bulbs {
+    position: absolute;
+    inset: -12px;
+    pointer-events: none;
+  }
+  .bulb {
+    position: absolute;
+    width: 9px; height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: var(--cream);
+    box-shadow: 0 0 6px var(--cream);
+    transition: background .2s, box-shadow .2s;
+  }
+  .bulb.dim { background: var(--gold); box-shadow: none; }
+  canvas#wheel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+  }
+  .pointer {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    width: 44px;
+    height: 54px;
+    transform: translateX(-50%);
+    transform-origin: 50% 20%;
+    z-index: 3;
+    filter: drop-shadow(0 4px 0 var(--cherry-deep));
+  }
+  .pointer.tick { animation: tick .12s ease-out; }
+  @keyframes tick { 0% { transform: translateX(-50%) rotate(0) } 40% { transform: translateX(-50%) rotate(-14deg) } 100% { transform: translateX(-50%) rotate(0) } }
+  .hub {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 22%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 0;
+    background: var(--cream);
+    box-shadow: 0 0 0 6px var(--cherry), 0 6px 0 6px var(--cherry-deep);
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(.9rem, 3.6vw, 1.15rem);
+    color: var(--cherry);
+    cursor: pointer;
+    z-index: 2;
+    transition: transform .15s;
+  }
+  .hub:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.06); }
+  .hub:disabled { cursor: default; color: var(--ink-soft); }
+  .hub:focus-visible { outline: 3px dashed var(--ink); outline-offset: 10px; }
+
+  /* Chances */
+  .chances {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: .8rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .slots { display: flex; gap: 8px; }
+  .slot {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    border: 2px dashed var(--cherry);
+    color: var(--cherry);
+    background: transparent;
+    letter-spacing: 0;
+  }
+  .slot.won { border-style: solid; background: var(--cream); animation: pop .45s cubic-bezier(.2, 1.6, .4, 1); }
+
+  .spin-btn {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--cream);
+    background: var(--cherry);
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 34px;
+    box-shadow: 0 6px 0 var(--cherry-deep);
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s, opacity .2s;
+  }
+  .spin-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 var(--cherry-deep); }
+  .spin-btn:disabled { opacity: .45; cursor: default; }
+  .spin-btn:focus-visible { outline: 3px dashed var(--ink); outline-offset: 4px; }
+
+  .status { min-height: 1.4em; margin: 0; font-weight: 700; color: var(--ink-soft); }
+
+  /* Lista de prêmios */
+  .prizes {
+    width: 100%;
+    margin-top: 14px;
+    background: var(--cream);
+    border-radius: 22px;
+    padding: 18px 20px 20px;
+    text-align: left;
+    box-shadow: 0 4px 0 var(--bg-dot);
+  }
+  .prizes h2 {
+    margin: 0 0 10px;
+    font-family: var(--hand);
+    font-size: 1.7rem;
+    color: var(--cherry);
+    font-weight: 600;
+  }
+  .prizes ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+  }
+  .prizes li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: .95rem;
+    font-weight: 700;
+    min-width: 0;
+    line-height: 1.25;
+  }
+  .prizes li i {
+    flex: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+  }
+  .prizes li.won { color: var(--cherry); }
+  @media (max-width: 420px) { .prizes ul { grid-template-columns: 1fr; } }
+
+  /* Cartão do prêmio */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(90, 34, 56, .42);
+    display: grid;
+    place-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    z-index: 20;
+  }
+  .card {
+    width: min(380px, 100%);
+    background: var(--cream);
+    border-radius: 28px;
+    padding: 30px 24px 24px;
+    text-align: center;
+    box-shadow: 0 10px 0 var(--cherry-deep);
+    border: 4px solid var(--cherry);
+    animation: pop .45s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  @keyframes pop { from { transform: scale(.6) rotate(-4deg); opacity: 0 } to { transform: none; opacity: 1 } }
+  .card .kicker { margin: 0; font-family: var(--hand); font-size: 1.6rem; color: var(--cherry); }
+  .card .emoji { font-size: 3.6rem; line-height: 1; margin: 8px 0 4px; }
+  .card h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+  .card .detail { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.45; }
+  .card .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+  .ghost-btn {
+    font-family: var(--body);
+    font-weight: 800;
+    font-size: 1rem;
+    background: transparent;
+    color: var(--cherry-deep);
+    border: 2px solid var(--cherry);
+    border-radius: 999px;
+    padding: 11px 20px;
+    cursor: pointer;
+  }
+  .ghost-btn:hover { background: var(--bg); }
+  .ghost-btn:focus-visible { outline: 3px dashed var(--ink); outline-offset: 3px; }
+
+  .final {
+    width: 100%;
+    background: var(--cherry);
+    color: var(--cream);
+    border-radius: 22px;
+    padding: 18px 20px;
+    box-shadow: 0 6px 0 var(--cherry-deep);
+  }
+  .final p { margin: 0; }
+  .final .lbl { font-family: var(--hand); font-size: 1.5rem; }
+  .final .val { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1.15; margin-top: 2px; }
+  .final .note { margin-top: 8px; font-size: .9rem; opacity: .9; }
+
+  .restart {
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    font: 700 .85rem var(--body);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  canvas#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+
+  footer { font-family: var(--hand); font-size: 1.3rem; color: var(--ink-soft); margin-top: 6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { animation: none; }
+    .pointer.tick { animation: none; }
+  }
+</style>
+
+<main>
+  <p class="eyebrow">um presentinho pra você</p>
+  <h1>Roleta da <span>Liz</span></h1>
+  <p class="lead">Gire a roleta duas vezes e descubra os seus dois presentes.</p>
+
+  <div class="wheel-wrap">
+    <div class="bulbs" id="bulbs"></div>
+    <svg class="pointer" id="pointer" viewBox="0 0 44 54" aria-hidden="true">
+      <path d="M22 54 L4 18 A20 20 0 1 1 40 18 Z" fill="#e0456f"/>
+      <circle cx="22" cy="18" r="8" fill="#fffaf6"/>
+    </svg>
+    <canvas id="wheel" width="880" height="880" role="img" aria-label="Roleta com oito presentes"></canvas>
+    <button class="hub" id="hub" type="button" aria-label="Girar a roleta">Girar</button>
+  </div>
+
+  <div class="chances">
+    <span>Presentes</span>
+    <div class="slots" id="slots"></div>
+  </div>
+
+  <button class="spin-btn" id="spin" type="button">Girar a roleta</button>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <section class="final" id="final" hidden>
+    <p class="lbl">os seus presentes são…</p>
+    <p class="val" id="finalName1"></p>
+    <p class="val" id="finalName2"></p>
+    <p class="note">Tira um print e mostra pra ele 💌</p>
+  </section>
+
+  <section class="prizes">
+    <h2>O que pode sair</h2>
+    <ul id="list"></ul>
+  </section>
+
+  <button class="restart" id="restart" type="button" hidden>Começar de novo</button>
+  <footer>feito com carinho, pra Liz</footer>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="prizeName">
+    <p class="kicker" id="kicker">Saiu…</p>
+    <div class="emoji" id="prizeEmoji"></div>
+    <h3 id="prizeName"></h3>
+    <p class="detail" id="prizeDetail"></p>
+    <div class="actions" id="actions"></div>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+  const PRIZES = [
+    { lines: ["Body Splash", "Victoria's Secret"], name: "Body Splash da Victoria's Secret", emoji: "🌸", detail: "Pra ficar cheirosinha o dia todo.", color: "#ffc2d4" },
+    { lines: ["Kit", "Kérastase"], name: "Kit de produtos Kérastase", emoji: "💆‍♀️", detail: "Cabelo de salão em casa.", color: "#fff1d6" },
+    { lines: ["Carrinho", "Shopee/Shein"], name: "Carrinho da Shopee ou da Shein", emoji: "🛍️", detail: "Enche o carrinho que eu pago.", color: "#d9ecff" },
+    { lines: ["Dia de", "Princesa"], name: "Dia de Princesa", emoji: "👑", detail: "Unha, cabelo, cílios e tudo o que tiver direito.", color: "#ffd8e6" },
+    { lines: ["Presente de", "sua escolha"], name: "Presente de sua escolha", emoji: "🎁", detail: "Você escolhe o que quiser.", color: "#ffe7a8" },
+    { lines: ["Biscoito", "Piraquê"], name: "Biscoito Piraquê", emoji: "🍪", detail: "Simples, mas a gente sabe que é amor.", color: "#e6dcff" },
+    { lines: ["Meias", "fofinhas"], name: "Meias fofas e confortáveis", emoji: "🧦", detail: "Pezinho quentinho garantido.", color: "#d6f5e6" },
+    { lines: ["212 VIP", "Rosé"], name: "Perfume 212 VIP Rosé", emoji: "🥂", detail: "Chique do jeito que você merece.", color: "#ffd0c2" },
+  ];
+  const MAX_SPINS = 2;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const wheel = document.getElementById("wheel");
+  const ctx = wheel.getContext("2d");
+  const SIZE = wheel.width, R = SIZE / 2;
+  const SEG = (Math.PI * 2) / PRIZES.length;
+
+  const spinBtn = document.getElementById("spin");
+  const hub = document.getElementById("hub");
+  const statusEl = document.getElementById("status");
+  const pointer = document.getElementById("pointer");
+  const overlay = document.getElementById("overlay");
+  const actions = document.getElementById("actions");
+
+  let rotation = 0;     // radianos, sentido horário
+  let used = 0;
+  let spinning = false;
+  let finished = false;
+  let results = [];
+
+  function drawWheel() {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    PRIZES.forEach((p, i) => {
+      const a0 = -Math.PI / 2 + i * SEG, a1 = a0 + SEG;
+      ctx.beginPath();
+      ctx.moveTo(R, R);
+      ctx.arc(R, R, R, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#fffaf6";
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(R, R);
+      ctx.rotate(a0 + SEG / 2);
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.font = "64px system-ui, 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+      ctx.fillText(p.emoji, R - 30, 0);
+      // texto entre o emoji e o miolo, diminuindo a fonte até caber
+      const textEnd = R - 112, textStart = 130, maxW = textEnd - textStart;
+      let size = 32;
+      ctx.font = `800 ${size}px Nunito, system-ui, sans-serif`;
+      while (size > 16 && Math.max(...p.lines.map(l => ctx.measureText(l).width)) > maxW) {
+        size -= 1;
+        ctx.font = `800 ${size}px Nunito, system-ui, sans-serif`;
+      }
+      ctx.fillStyle = "#5a2238";
+      const lh = size * 1.1;
+      p.lines.forEach((l, k) => ctx.fillText(l, textEnd, (k - (p.lines.length - 1) / 2) * lh));
+      ctx.restore();
+    });
+    // anel interno
+    ctx.beginPath();
+    ctx.arc(R, R, R - 3, 0, Math.PI * 2);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#fffaf6";
+    ctx.stroke();
+  }
+
+  function setRotation(r) { wheel.style.transform = `rotate(${r}rad)`; }
+
+  // luzinhas em volta
+  const bulbsEl = document.getElementById("bulbs");
+  const BULBS = 24;
+  for (let i = 0; i < BULBS; i++) {
+    const b = document.createElement("span");
+    b.className = "bulb" + (i % 2 ? " dim" : "");
+    const a = (i / BULBS) * Math.PI * 2;
+    b.style.left = 50 + Math.cos(a) * 48.6 + "%";
+    b.style.top = 50 + Math.sin(a) * 48.6 + "%";
+    bulbsEl.appendChild(b);
+  }
+  let bulbPhase = 0, bulbTimer = null;
+  function blink(speed) {
+    clearInterval(bulbTimer);
+    bulbTimer = setInterval(() => {
+      bulbPhase ^= 1;
+      [...bulbsEl.children].forEach((b, i) => b.classList.toggle("dim", (i + bulbPhase) % 2 === 1));
+    }, speed);
+  }
+  if (!reduceMotion) blink(700);
+
+  // espaços dos dois presentes
+  const slotsEl = document.getElementById("slots");
+  function renderSlots() {
+    slotsEl.innerHTML = "";
+    for (let i = 0; i < MAX_SPINS; i++) {
+      const won = results[i] !== undefined;
+      slotsEl.insertAdjacentHTML("beforeend",
+        `<span class="slot${won ? " won" : ""}" title="${won ? PRIZES[results[i]].name : ""}">${won ? PRIZES[results[i]].emoji : "?"}</span>`);
+    }
+    slotsEl.setAttribute("aria-label", `${results.length} de ${MAX_SPINS} presentes sorteados`);
+  }
+
+  // lista
+  const listEl = document.getElementById("list");
+  function renderList() {
+    listEl.innerHTML = PRIZES.map((p, i) =>
+      `<li class="${results.includes(i) ? "won" : ""}"><i style="background:${p.color}"></i><span>${p.name}</span></li>`).join("");
+  }
+
+  // som de "tic"
+  let audio = null;
+  function tickSound() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = "triangle";
+      o.frequency.value = 1200;
+      g.gain.setValueAtTime(0.06, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.05);
+      o.connect(g).connect(audio.destination);
+      o.start();
+      o.stop(audio.currentTime + 0.06);
+    } catch (e) {}
+  }
+
+  function spin() {
+    if (spinning || finished || used >= MAX_SPINS) return;
+    spinning = true;
+    used++;
+    overlay.hidden = true;
+    spinBtn.disabled = hub.disabled = true;
+    statusEl.textContent = used === 1 ? "Sorteando o primeiro presente…" : "Sorteando o segundo presente…";
+    if (!reduceMotion) blink(110);
+
+    // o segundo presente nunca repete o primeiro
+    let pick;
+    do { pick = Math.floor(Math.random() * PRIZES.length); } while (results.includes(pick));
+    const jitter = (Math.random() - 0.5) * SEG * 0.7;
+    const target = -(pick + 0.5) * SEG + jitter;
+    const TAU = Math.PI * 2;
+    const base = rotation - (((rotation % TAU) + TAU) % TAU);
+    let end = base + ((target % TAU) + TAU) % TAU + TAU * (reduceMotion ? 2 : 6);
+    if (end - rotation < TAU * 2) end += TAU;
+
+    const start = rotation, dist = end - start;
+    const duration = reduceMotion ? 1200 : 9500;
+    const t0 = performance.now();
+    let lastSeg = Math.floor(start / SEG);
+
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - t, 5);
+      rotation = start + dist * eased;
+      setRotation(rotation);
+      const seg = Math.floor(rotation / SEG);
+      if (seg !== lastSeg) {
+        lastSeg = seg;
+        tickSound();
+        if (!reduceMotion) {
+          pointer.classList.remove("tick");
+          void pointer.offsetWidth;
+          pointer.classList.add("tick");
+        }
+      }
+      if (t < 1) requestAnimationFrame(frame);
+      else land(pick);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function land(i) {
+    spinning = false;
+    results.push(i);
+    renderList();
+    renderSlots();
+    if (!reduceMotion) blink(700);
+    const p = PRIZES[i];
+    document.getElementById("prizeEmoji").textContent = p.emoji;
+    document.getElementById("prizeName").textContent = p.name;
+    document.getElementById("prizeDetail").textContent = p.detail;
+    actions.innerHTML = "";
+
+    if (used < MAX_SPINS) {
+      document.getElementById("kicker").textContent = "Seu primeiro presente é…";
+      statusEl.textContent = "Falta sortear o segundo presente.";
+      addAction("Girar para o segundo presente", "spin-btn", () => { overlay.hidden = true; spin(); });
+    } else {
+      document.getElementById("kicker").textContent = "Seu segundo presente é…";
+      statusEl.textContent = "";
+      addAction("Ver meus dois presentes", "spin-btn", finish);
+    }
+    overlay.hidden = false;
+    actions.querySelector("button").focus();
+    burst(70);
+  }
+
+  function addAction(label, cls, fn) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = cls;
+    b.textContent = label;
+    b.addEventListener("click", fn);
+    actions.appendChild(b);
+  }
+
+  function finish() {
+    finished = true;
+    overlay.hidden = true;
+    spinBtn.disabled = hub.disabled = true;
+    spinBtn.textContent = "Presentes sorteados";
+    statusEl.textContent = "";
+    results.forEach((i, k) => {
+      document.getElementById(`finalName${k + 1}`).textContent = `${PRIZES[i].emoji} ${PRIZES[i].name}`;
+    });
+    document.getElementById("final").hidden = false;
+    document.getElementById("restart").hidden = false;
+    burst(180);
+  }
+
+  function restart() {
+    used = 0; finished = false; results = [];
+    spinBtn.disabled = hub.disabled = false;
+    spinBtn.textContent = "Girar a roleta";
+    statusEl.textContent = "";
+    document.getElementById("final").hidden = true;
+    document.getElementById("restart").hidden = true;
+    renderSlots(); renderList();
+  }
+
+  // confete
+  const cv = document.getElementById("confetti");
+  const cc = cv.getContext("2d");
+  let pieces = [], confettiRunning = false;
+  function resize() { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
+  addEventListener("resize", resize); resize();
+  const CONF_COLORS = ["#e0456f", "#ffc2d4", "#f4b860", "#fffaf6", "#b5a2ff", "#8fd9b6"];
+  function burst(n) {
+    if (reduceMotion) return;
+    const d = devicePixelRatio;
+    for (let k = 0; k < n; k++) {
+      pieces.push({
+        x: innerWidth / 2 * d, y: innerHeight * 0.45 * d,
+        vx: (Math.random() - 0.5) * 18 * d, vy: (-Math.random() * 16 - 4) * d,
+        s: (6 + Math.random() * 7) * d, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        c: CONF_COLORS[k % CONF_COLORS.length], heart: Math.random() < 0.35, life: 0,
+      });
+    }
+    if (!confettiRunning) { confettiRunning = true; requestAnimationFrame(stepConfetti); }
+  }
+  function drawHeart(s) {
+    cc.beginPath();
+    cc.moveTo(0, s * 0.35);
+    cc.bezierCurveTo(-s, -s * 0.3, -s * 0.4, -s, 0, -s * 0.45);
+    cc.bezierCurveTo(s * 0.4, -s, s, -s * 0.3, 0, s * 0.35);
+    cc.fill();
+  }
+  function stepConfetti() {
+    cc.clearRect(0, 0, cv.width, cv.height);
+    const d = devicePixelRatio;
+    pieces = pieces.filter(p => p.y < cv.height + 40 && p.life < 400);
+    for (const p of pieces) {
+      p.life++; p.vy += 0.45 * d; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      cc.save(); cc.translate(p.x, p.y); cc.rotate(p.r); cc.fillStyle = p.c;
+      if (p.heart) drawHeart(p.s * 1.3); else cc.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+      cc.restore();
+    }
+    if (pieces.length) requestAnimationFrame(stepConfetti);
+    else { confettiRunning = false; cc.clearRect(0, 0, cv.width, cv.height); }
+  }
+
+  spinBtn.addEventListener("click", spin);
+  hub.addEventListener("click", spin);
+  document.getElementById("restart").addEventListener("click", restart);
+
+  renderSlots();
+  renderList();
+  drawWheel();
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(drawWheel);
+</script>
+
+</body></html>
